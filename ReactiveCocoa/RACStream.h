@@ -15,6 +15,9 @@
 ///
 /// Setting `stop` to `YES` will cause the bind to terminate after the returned
 /// value. Returning `nil` will result in immediate termination.
+
+// 一个接受一个从 RACStream 的值并返回相同的流类的一个新实例的块。
+// 将停止设置为是将导致终止后返回的值绑定。返回 '零' 将导致立即终止。
 typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 
 /// An abstract class representing any stream of values.
@@ -24,14 +27,24 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 /// When subclassing RACStream, only the methods in the main @interface body need
 /// to be overridden.
+
+// 单词: monad:一元
+// 一个抽象类，表示任何流值。
+// 此类表示的单细胞，可以赖以建立许多基于工作流的操作。
+// 当子类化 RACStream，只有 @interface 主体中的方法不需要重写。
 @interface RACStream : NSObject
 
 /// Returns an empty stream.
+
+// 返回空流。
 + (instancetype)empty;
 
 /// Lifts `value` into the stream monad.
 ///
 /// Returns a stream containing only the given value.
+
+// 入流 一元 升降机 '价值'。
+// 返回包含给定的值的流。
 + (instancetype)return:(id)value;
 
 /// Lazily binds a block to the values in the receiver.
@@ -45,6 +58,11 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 /// Returns a new stream which represents the combined result of all lazy
 /// applications of `block`.
+
+// 懒洋洋地将一个块绑定到接收机中的值。
+// 如果您需要绑定可提前，终止或关闭一些国家只使用此设置。-flattenMap: 是更适合于所有其他情况。
+// 块 - 块返回RACStreamBindBlock 。此块将被绑定的流被重新评估每一次调用。此块不能是零或返回零。
+// 返回一个新的数据流代表的` block`懒惰应用的综合作用的结果。
 - (instancetype)bind:(RACStreamBindBlock (^)(void))block;
 
 /// Appends the values of `stream` to the values in the receiver.
@@ -53,6 +71,10 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///          concrete class as the receiver, and should not be `nil`.
 ///
 /// Returns a new stream representing the receiver followed by `stream`.
+
+// 追加的` stream`的值，以在接收器中的值。
+// 流 - 甲流来连接。这必须是相同的混凝土类作为接收机的一个实例，而不应是` nil` 。
+// 返回表示接收随后` stream`一个新的数据流。
 - (instancetype)concat:(RACStream *)stream;
 
 /// Zips the values in the receiver with those of the given stream to create
@@ -66,6 +88,11 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 /// Returns a new stream of RACTuples, representing the zipped values of the
 /// two streams.
+
+// 拉链与给定的流接收器创建 RACTuples 中的值。
+// 每个流的第一个值将合并，然后第二个值，和如此反复，直到至少一个流用尽。
+// 小河-小河与 zip。这必须作为接收器，相同的具体类的一个实例，并且不应该是 '零'。
+// 返回表示两个流的压缩的值的新流 RACTuples。
 - (instancetype)zipWith:(RACStream *)stream;
 
 @end
@@ -74,9 +101,14 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 /// debugging.
 ///
 /// Subclasses do not need to override the methods here.
+
+// 此扩展包含支持命名流用于调试功能。
+// 不需要子类重写的方法在这里。
 @interface RACStream ()
 
 /// The name of the stream. This is for debugging/human purposes only.
+
+// 流的名称。这是仅用于调试/人。
 @property (copy) NSString *name;
 
 /// Sets the name of the receiver to the given format string.
@@ -85,6 +117,10 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 /// RAC_DEBUG_SIGNAL_NAMES environment variable is set.
 ///
 /// Returns the receiver, for easy method chaining.
+
+// 将接收器的名称设置为给定的格式字符串。
+// 这是出于调试目的，并不做任何事，除非 RAC_DEBUG_SIGNAL_NAMES 环境变量设置。
+// 返回接收机，容易方法链接。
 - (instancetype)setNameWithFormat:(NSString *)format, ... NS_FORMAT_FUNCTION(1, 2);
 
 @end
@@ -93,6 +129,9 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 /// These methods do not need to be overridden, although subclasses may
 /// occasionally gain better performance from doing so.
+
+// 基于 RACStream 原语操作。
+// 这些方法不需要重写，虽然子类可能偶尔会获得更好的性能，这样做。
 @interface RACStream (Operations)
 
 /// Maps `block` across the values in the receiver and flattens the result.
@@ -110,6 +149,8 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 ///   [signal flattenMap:^(id x) {
 ///       // Logs each time a returned signal completes.
+
+            // 每次返回的信号完成的日志。
 ///       return [[RACSignal return:x] logCompleted];
 ///   }];
 ///
@@ -118,10 +159,18 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///           return [RACSignal return:x];
 ///       }]
 ///       // Logs only once, when all of the signals complete.
+
+            // 记录只有一次，当所有的信号完成。
 ///       logCompleted];
 ///
 /// Returns a new stream which represents the combined streams resulting from
 /// mapping `block`.
+
+// 在接收机中的值间映射阻止并展平的结果。
+// 运营商应用 _after_ flattenMap 注: 从运营商 _within_ flattenMap 的行为不同:。请参阅下面的示例部分。
+// 这对应于在 Rx 的 'SelectMany' 方法。
+// 块-块，接受接收器中的值，并返回接收器的类的一个新实例。返回此块从 ' 零' 等于返回空的信号。
+// 返回一个新的流代表联合的流造成的映射阻止。
 - (instancetype)flattenMap:(RACStream * (^)(id value))block;
 
 /// Flattens a stream of streams.
@@ -130,6 +179,10 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 ///
 /// Returns a stream consisting of the combined streams obtained from the
 /// receiver.
+
+// 拼合流流。
+// 这对应于的合并方法在 Rx
+// 返回流组成的联合的溪流从接收方获得。
 - (instancetype)flatten;
 
 /// Maps `block` across the values in the receiver.
@@ -137,6 +190,10 @@ typedef RACStream * (^RACStreamBindBlock)(id value, BOOL *stop);
 /// This corresponds to the `Select` method in Rx.
 ///
 /// Returns a new stream with the mapped values.
+
+// 块整个接收机中的值映射。
+// 这对应于在 Rx 的 '选择' 的方法。
+// 返回一个新流与映射的值。
 - (instancetype)map:(id (^)(id value))block;
 
 /// Replaces each value in the receiver with the given object.
